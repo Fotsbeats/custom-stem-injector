@@ -3,16 +3,18 @@ set -euo pipefail
 export COPYFILE_DISABLE=1
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SOURCE_APP="/Users/zachsilverman/Desktop/Custom Stem Injector/Custom Stem Injector.app"
-BETA_DIR="/Users/zachsilverman/Desktop/Custom Stem Injector Beta"
+SOURCE_APP="$ROOT/node_modules/electron/dist/Electron.app"
+BETA_ROOT="$ROOT/Public Builds"
+BETA_DIR="$BETA_ROOT/Custom Stem Injector Beta"
 BETA_APP="$BETA_DIR/Custom Stem Injector.app"
 BETA_RUNTIME="$BETA_APP/Contents/Resources/app"
 BETA_HELPER="$BETA_DIR/Open Custom Stem Injector.command"
 BETA_README="$BETA_DIR/README.txt"
 BETA_LICENSE="$BETA_DIR/LICENSE.txt"
-BETA_ZIP="/Users/zachsilverman/Desktop/Custom Stem Injector Beta.zip"
+BETA_ZIP="$BETA_ROOT/Custom Stem Injector Beta.zip"
 SOURCE_BETA_README="$ROOT/distribution/BETA_README.txt"
 SOURCE_LICENSE="$ROOT/LICENSE.txt"
+SOURCE_ICON="$ROOT/tools/AppIcon.icns"
 
 require_tool() {
   local tool="$1"
@@ -32,11 +34,33 @@ strip_appledouble() {
   find "$target" -name '._*' -type f -delete
 }
 
+customize_shell() {
+  local app_path="$1"
+  local plist="$app_path/Contents/Info.plist"
+  local main_icon="$app_path/Contents/Resources/electron.icns"
+
+  if [ -f "$SOURCE_ICON" ]; then
+    cp -f "$SOURCE_ICON" "$main_icon"
+  fi
+
+  if [ -f "$plist" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Custom Stem Injector" "$plist" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleName Custom Stem Injector" "$plist" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.fotsbeats.customstems" "$plist" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Set :LSApplicationCategoryType public.app-category.music" "$plist" >/dev/null 2>&1 || true
+  fi
+}
+
 require_tool rsync
 require_tool ditto
 require_tool codesign
 require_tool xattr
 require_tool zip
+
+if [ ! -x /usr/libexec/PlistBuddy ]; then
+  echo "Missing required tool: /usr/libexec/PlistBuddy" >&2
+  exit 1
+fi
 
 if [ ! -d "$SOURCE_APP" ]; then
   echo "Source app not found: $SOURCE_APP" >&2
@@ -53,14 +77,21 @@ if [ ! -f "$SOURCE_LICENSE" ]; then
   exit 1
 fi
 
+if [ ! -f "$SOURCE_ICON" ]; then
+  echo "App icon not found: $SOURCE_ICON" >&2
+  exit 1
+fi
+
 echo "1) Quitting running app instances"
 osascript -e 'tell application id "com.fotsbeats.customstems" to quit' >/dev/null 2>&1 || true
 sleep 1
 
 echo "2) Rebuilding beta folder"
 rm -rf "$BETA_DIR"
+mkdir -p "$BETA_ROOT"
 mkdir -p "$BETA_DIR"
 ditto "$SOURCE_APP" "$BETA_APP"
+customize_shell "$BETA_APP"
 
 echo "3) Syncing current runtime into beta app"
 mkdir -p "$BETA_RUNTIME"
@@ -88,11 +119,14 @@ cp -f "$SOURCE_BETA_README" "$BETA_README"
 cp -f "$SOURCE_LICENSE" "$BETA_LICENSE"
 strip_appledouble "$BETA_DIR"
 
-echo "6) Building zip artifact"
+echo "6) Applying fresh ad hoc signature"
+codesign --force --deep --sign - "$BETA_APP" >/dev/null 2>&1
+
+echo "7) Building zip artifact"
 rm -f "$BETA_ZIP"
 ditto -c -k --keepParent --norsrc "$BETA_DIR" "$BETA_ZIP"
 
-echo "7) Validation"
+echo "8) Validation"
 spctl -a -vv "$BETA_APP" || true
 codesign -dvvv "$BETA_APP" 2>&1 | sed -n '1,20p' || true
 

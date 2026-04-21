@@ -73,8 +73,8 @@ Use this folder as the long-term working project:
 
 Treat these as generated outputs, not source:
 
-- `/Users/zachsilverman/Desktop/Custom Stem Injector Beta`
-- `/Users/zachsilverman/Desktop/Custom Stem Injector Beta.zip`
+- `/Users/zachsilverman/Desktop/Custom Stem Dev/Public Builds/Custom Stem Injector Beta`
+- `/Users/zachsilverman/Desktop/Custom Stem Dev/Public Builds/Custom Stem Injector Beta.zip`
 - `/Users/zachsilverman/Desktop/Custom Stem Injector/Custom Stem Injector.app`
 
 Normal loop:
