@@ -8,6 +8,8 @@ Custom Stem Injector Beta is an Apple Silicon macOS test build for approved test
 
 - `Custom Stem Injector Beta.zip`
 
+Use the Release asset download, not the repository branch ZIP from the `Code` menu.
+
 ## Install notes
 
 - unsigned and not notarized
