@@ -1,6 +1,6 @@
 {
   "name": "custom-stems-ui",
-  "version": "1.0.0",
+  "version": "0.1.0-beta.1",
   "description": "macOS desktop app for building Serato-compatible custom stem sidecars",
   "author": "Fotsbeats",
   "license": "SEE LICENSE IN LICENSE.txt",

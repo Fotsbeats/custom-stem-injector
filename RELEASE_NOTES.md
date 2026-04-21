@@ -1,5 +1,7 @@
 # Custom Stem Injector Beta
 
+Version: `0.1.0-beta.1`
+
 ## Release Summary
 
 Custom Stem Injector Beta is an Apple Silicon macOS test build for approved testers.

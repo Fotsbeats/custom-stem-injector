@@ -4,6 +4,8 @@ Custom Stem Injector is a macOS desktop app for building Serato-compatible custo
 
 This repository contains the source, packaging scripts, and release documentation for the project. Downloadable tester builds are distributed through GitHub Releases rather than through branch ZIP downloads.
 
+Current beta version: `0.1.0-beta.1`
+
 ## For Testers
 
 Use the GitHub Releases page for this repository to download the current beta build.
@@ -82,6 +84,16 @@ Normal loop:
 2. Run the beta build script.
 3. Verify the generated beta app and zip.
 4. Upload the fresh zip to GitHub Releases.
+
+## Beta versioning
+
+Releases use semantic versioning with beta prerelease tags.
+
+- first public beta: `v0.1.0-beta.1`
+- next beta refresh on the same minor line: `v0.1.0-beta.2`
+- next meaningful beta milestone: `v0.2.0-beta.1`
+
+Use the same version in `package.json`, the Git tag, and the GitHub Release title so the app and release history stay aligned.
 
 ## Building the beta package
 
