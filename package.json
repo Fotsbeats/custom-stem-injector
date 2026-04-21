@@ -1,0 +1,14 @@
+{
+  "name": "custom-stems-ui",
+  "version": "1.0.0",
+  "description": "macOS desktop app for building Serato-compatible custom stem sidecars",
+  "author": "Fotsbeats",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^32.2.0"
+  }
+}

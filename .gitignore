@@ -1,0 +1,33 @@
+.DS_Store
+
+# Node / Electron local installs
+node_modules/
+.runtime/
+
+# Packaged and generated app artifacts
+Custom Stem Dev.app/
+dist/
+release/
+
+# Generated beta outputs
+Custom Stem Injector Beta/
+Custom Stem Injector Beta.zip
+
+# Local checkpoints and scratch data
+stable_checkpoints/
+tmp_*
+tmp_pycache/
+tmp_coreml/
+
+# Local logs
+*.log
+
+# Bundled local Python/runtime payloads too large for normal GitHub commits
+tools/_pydeps/
+tools/kim2_runtime/*.onnx
+tools/kim2_runtime/*.th
+tools/kim2_runtime/*.ckpt
+
+# Internal agent/session notes not meant for the public repo
+AGENTS.md
+frontend.md

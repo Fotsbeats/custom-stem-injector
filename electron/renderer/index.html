@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Stem Injector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="window-top-drag-zone" aria-hidden="true"></div>
+
+    <!-- Ambient background -->
+    <div class="ambient-canvas" aria-hidden="true">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="grid-overlay"></div>
+    </div>
+
+    <main class="app-shell">
+
+      <!-- ── Header ───────────────────────────────────────── -->
+      <header class="app-header">
+
+        <!-- Logo -->
+        <div class="logo-group">
+          <!-- Border-beam ring badge (21st.dev technique) -->
+          <div class="badge-ring" aria-hidden="true">
+            <div class="badge-ring-inner">
+              <svg class="badge-syringe-icon" viewBox="0 0 28 28" width="26" height="26">
+                <!-- Barrel -->
+                <rect x="4" y="11" width="16" height="6" rx="2"
+                  fill="rgba(20,217,204,0.10)" stroke="rgba(20,217,204,0.75)" stroke-width="1"/>
+                <!-- Fluid fill -->
+                <rect x="5" y="12.5" width="9" height="3" rx="1"
+                  fill="rgba(20,217,204,0.70)" class="badge-fluid"/>
+                <!-- Plunger rod -->
+                <rect x="1.5" y="12.5" width="4" height="3" rx="1"
+                  fill="rgba(148,196,255,0.60)" stroke="rgba(148,196,255,0.80)" stroke-width="0.6"/>
+                <!-- Plunger T-bar -->
+                <rect x="0" y="10.5" width="3" height="7" rx="1.5"
+                  fill="rgba(148,196,255,0.42)" stroke="rgba(148,196,255,0.70)" stroke-width="0.6"/>
+                <!-- Connector + needle -->
+                <rect x="20" y="12.5" width="3" height="3" rx="1"
+                  fill="rgba(20,217,204,0.55)" stroke="rgba(20,217,204,0.88)" stroke-width="0.7"/>
+                <path d="M23,13.5 L27.5,14 L23,14.5 Z"
+                  fill="rgba(210,252,248,0.95)"/>
+                <!-- Tip dot -->
+                <circle cx="27.5" cy="14" r="0.8"
+                  fill="rgba(20,217,204,1)" class="badge-tip-dot"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="wordmark">
+            <span class="wordmark-top">Custom Stem</span>
+            <span class="wordmark-bottom">Injector</span>
+          </div>
+        </div>
+
+        <!-- Step pipeline -->
+        <nav class="step-pipeline" aria-label="Workflow steps">
+          <div class="step-pip" data-step="extract">
+            <span class="pip-num">01</span>
+            <span class="pip-label">Extract</span>
+          </div>
+          <svg class="pip-arrow" viewBox="0 0 18 8" width="18" height="8" aria-hidden="true">
+            <path d="M0,4 L14,4 M11,1.5 L15,4 L11,6.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="step-pip" data-step="prep">
+            <span class="pip-num">02</span>
+            <span class="pip-label">Prepare</span>
+          </div>
+          <svg class="pip-arrow" viewBox="0 0 18 8" width="18" height="8" aria-hidden="true">
+            <path d="M0,4 L14,4 M11,1.5 L15,4 L11,6.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="step-pip" data-step="build">
+            <span class="pip-num">03</span>
+            <span class="pip-label">Build</span>
+          </div>
+        </nav>
+
+        <!-- Redesigned syringe -->
+        <div class="syringe-wrap" aria-hidden="true">
+          <svg class="syringe-hero" viewBox="-12 -4 240 74" width="196" height="60">
+            <defs>
+              <linearGradient id="sg-barrel-grd" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="rgba(20,217,204,0.18)"/>
+                <stop offset="100%" stop-color="rgba(20,217,204,0.07)"/>
+              </linearGradient>
+              <linearGradient id="sg-fluid-grd" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stop-color="rgba(20,217,204,0.80)"/>
+                <stop offset="80%"  stop-color="rgba(13,179,168,0.65)"/>
+                <stop offset="100%" stop-color="rgba(13,179,168,0.20)"/>
+              </linearGradient>
+              <linearGradient id="sg-plunger-grd" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="rgba(148,196,255,0.45)"/>
+                <stop offset="100%" stop-color="rgba(100,155,220,0.28)"/>
+              </linearGradient>
+              <linearGradient id="sg-beam-grd" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stop-color="rgba(20,217,204,0.0)"/>
+                <stop offset="40%"  stop-color="rgba(20,217,204,0.95)"/>
+                <stop offset="75%"  stop-color="rgba(157,123,255,0.85)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0.0)"/>
+              </linearGradient>
+              <filter id="sg-glow-filter" x="-30%" y="-100%" width="160%" height="300%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+            </defs>
+
+            <!-- Plunger group (animated as a unit when processing) -->
+            <g class="sg-plunger-grp">
+              <!-- T-handle vertical bar -->
+              <rect x="0"  y="20" width="3.5" height="28" rx="1.75"
+                fill="rgba(140,178,220,0.42)" stroke="rgba(165,205,240,0.68)" stroke-width="0.8"/>
+              <!-- T-handle top crossbar -->
+              <rect x="-8" y="17" width="18" height="5.5" rx="2.75"
+                fill="rgba(140,178,220,0.32)" stroke="rgba(165,205,240,0.60)" stroke-width="0.8"/>
+              <!-- T-handle bottom crossbar -->
+              <rect x="-8" y="46" width="18" height="5.5" rx="2.75"
+                fill="rgba(140,178,220,0.32)" stroke="rgba(165,205,240,0.60)" stroke-width="0.8"/>
+              <!-- Plunger rod -->
+              <rect x="3.5" y="30" width="30" height="8" rx="2"
+                fill="url(#sg-plunger-grd)" stroke="rgba(148,196,255,0.48)" stroke-width="0.7"/>
+              <!-- Plunger tip (stopper inside barrel) -->
+              <rect x="31" y="22" width="6" height="24" rx="2"
+                fill="rgba(20,217,204,0.42)" stroke="rgba(20,217,204,0.85)" stroke-width="0.9"/>
+            </g>
+
+            <!-- Flange ring (finger grip) -->
+            <rect x="34" y="14" width="8" height="40" rx="4"
+              fill="rgba(20,217,204,0.18)" stroke="rgba(20,217,204,0.78)" stroke-width="1.3"/>
+
+            <!-- Barrel body -->
+            <rect x="41" y="19" width="108" height="30" rx="8"
+              fill="url(#sg-barrel-grd)" stroke="rgba(20,217,204,0.58)" stroke-width="1.3"/>
+
+            <!-- Graduation ticks (top) -->
+            <g stroke="rgba(20,217,204,0.38)" stroke-width="0.9" stroke-linecap="round">
+              <line x1="59"  y1="15.5" x2="59"  y2="19"/>
+              <line x1="77"  y1="14.5" x2="77"  y2="19"/>
+              <line x1="95"  y1="15.5" x2="95"  y2="19"/>
+              <line x1="113" y1="14.5" x2="113" y2="19"/>
+              <line x1="131" y1="15.5" x2="131" y2="19"/>
+            </g>
+            <!-- Graduation ticks (bottom) -->
+            <g stroke="rgba(20,217,204,0.38)" stroke-width="0.9" stroke-linecap="round">
+              <line x1="59"  y1="49" x2="59"  y2="52.5"/>
+              <line x1="77"  y1="49" x2="77"  y2="53.5"/>
+              <line x1="95"  y1="49" x2="95"  y2="52.5"/>
+              <line x1="113" y1="49" x2="113" y2="53.5"/>
+              <line x1="131" y1="49" x2="131" y2="52.5"/>
+            </g>
+
+            <!-- Fluid fill -->
+            <rect class="sg-fluid" x="39" y="23" width="70" height="22" rx="5"
+              fill="url(#sg-fluid-grd)"/>
+
+            <!-- Barrel-to-hub connector -->
+            <rect x="149" y="23" width="18" height="22" rx="4"
+              fill="rgba(20,217,204,0.20)" stroke="rgba(20,217,204,0.70)" stroke-width="1.2"/>
+
+            <!-- Needle hub -->
+            <rect x="167" y="27" width="14" height="14" rx="3.5"
+              fill="rgba(20,217,204,0.28)" stroke="rgba(20,217,204,0.76)" stroke-width="1.1"/>
+
+            <!-- Needle beam flash (processing only) -->
+            <rect class="sg-needle-beam" x="181" y="32.5" width="36" height="3" rx="1.5"
+              fill="url(#sg-beam-grd)"/>
+
+            <!-- Needle (tapered path) -->
+            <path class="sg-needle"
+              d="M181,31.2 L216,33.4 L217,34 L216,34.6 L181,36.8 Z"
+              fill="rgba(210,252,248,0.92)"
+              filter="url(#sg-glow-filter)"/>
+
+            <!-- Needle tip glow dot -->
+            <circle class="sg-needle-tip" cx="217" cy="34" r="2"
+              fill="rgba(20,217,204,0.95)"/>
+
+            <!-- Drops (hidden until processing) -->
+            <circle class="sg-drop sg-drop-a" cx="220" cy="33" r="2.6" fill="rgba(20,217,204,0)"/>
+            <circle class="sg-drop sg-drop-b" cx="224" cy="37" r="1.9" fill="rgba(20,217,204,0)"/>
+            <circle class="sg-drop sg-drop-c" cx="220" cy="39" r="1.4" fill="rgba(20,217,204,0)"/>
+          </svg>
+
+          <div class="syringe-label">
+            <span class="syringe-label-idle">Ready</span>
+            <span class="syringe-label-active">Injecting</span>
+          </div>
+        </div>
+
+      </header><!-- /app-header -->
+
+      <!-- ── Workspace ─────────────────────────────────────── -->
+      <section class="workspace">
+
+        <div class="left-pane">
+
+          <!-- Stem Layout -->
+          <section id="stemLayoutCard" class="card">
+            <div class="card-header">
+              <span class="card-title">Stem Layout</span>
+            </div>
+            <div class="seg-control">
+              <label class="seg-option">
+                <input type="radio" name="mode" value="two" checked />
+                <span class="seg-label">
+                  <strong>2 Stems</strong>
+                  <em>Vocals + Instrumental</em>
+                </span>
+              </label>
+              <label class="seg-option">
+                <input type="radio" name="mode" value="four" />
+                <span class="seg-label">
+                  <strong>4 Stems</strong>
+                  <em>Vox · Bass · Drums · Melody</em>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Step 1 Mode -->
+          <section id="step1ModeCard" class="card">
+            <div class="card-header">
+              <span class="card-title">Step 1 Mode</span>
+            </div>
+            <div class="seg-control">
+              <label class="seg-option">
+                <input type="radio" name="step1_mode" value="extract" checked />
+                <span class="seg-label">
+                  <strong>Extract Stems</strong>
+                </span>
+              </label>
+              <label class="seg-option">
+                <input type="radio" name="step1_mode" value="align" />
+                <span class="seg-label">
+                  <strong>Align Stems</strong>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Source Files -->
+          <section class="card form-card">
+            <div class="card-header">
+              <span class="card-title">Source Files</span>
+            </div>
+            <p id="sourceContext" class="source-context"></p>
+            <div class="field-grid" id="fieldGrid"></div>
+          </section>
+
+          <!-- Workflow Actions -->
+          <section class="card step-card">
+            <div class="card-header">
+              <span class="card-title">Workflow</span>
+            </div>
+            <div class="actions-row">
+              <button id="extractBtn" class="btn btn-primary btn-guided-active">
+                <span class="btn-step-num">01</span>
+                <span class="btn-label">Extract Stems</span>
+              </button>
+              <button id="prepBtn" class="btn btn-primary btn-guided-active">
+                <span class="btn-step-num">02</span>
+                <span class="btn-label">Prepare Files</span>
+              </button>
+              <button id="buildBtn" class="btn btn-secondary">
+                <span class="btn-step-num">03</span>
+                <span class="btn-label">Build .Stem</span>
+              </button>
+              <button id="clearBtn" class="btn btn-ghost">
+                <span class="btn-label">Clear</span>
+              </button>
+            </div>
+          </section>
+
+        </div><!-- /left-pane -->
+
+        <!-- Output Panel -->
+        <section class="card output-card">
+          <div class="card-header output-head">
+            <span class="card-title">Status &amp; Output</span>
+            <label class="debug-toggle">
+              <input id="debugModeToggle" type="checkbox" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label">Debug</span>
+            </label>
+          </div>
+
+          <div class="status-bar">
+            <span class="status-dot"></span>
+            <span class="status-label">Status</span>
+            <span id="statusText" class="status-value">Ready</span>
+          </div>
+
+          <div id="extractProgressWrap" class="extract-progress hidden" aria-hidden="true">
+            <div class="progress-track">
+              <div id="extractProgressBar" class="progress-fill"></div>
+            </div>
+            <div id="extractProgressText" class="progress-label">Starting extraction...</div>
+          </div>
+
+          <pre id="outputBox" class="output-terminal">Build output will appear here.</pre>
+        </section>
+
+      </section><!-- /workspace -->
+    </main>
+
+    <!-- ── Manual Align Overlay ──────────────────────────── -->
+    <section id="manualAlignOverlay" class="align-overlay hidden" aria-hidden="true">
+      <div class="align-card">
+
+        <header class="align-header">
+          <div class="align-title-group">
+            <h2 class="align-title">Manual Stem Alignment</h2>
+            <p class="align-subtitle">Base track locked at 0. Drag clips, trim ends, mute/solo, then confirm.</p>
+          </div>
+          <button id="manualAlignCancelBtn" class="btn btn-secondary" type="button">Use Auto Align</button>
+        </header>
+
+        <div class="align-timeline" id="manualTimeline">
+
+          <div id="manualRuler" class="align-ruler">
+            <div id="manualPlayheadRuler" class="align-playhead-ruler"></div>
+          </div>
+
+          <!-- Base track -->
+          <div class="track-row">
+            <div class="track-head track-head-base">
+              <div class="track-name">Base</div>
+              <div class="track-controls">
+                <button id="mute-base" class="btn btn-secondary btn-mini" type="button">M</button>
+                <button id="solo-base" class="btn btn-secondary btn-mini" type="button">S</button>
+              </div>
+            </div>
+            <div id="lane-base" class="track-lane">
+              <canvas id="wave-base" class="lane-wave"></canvas>
+              <div id="playhead-base" class="lane-playhead"></div>
+              <div id="clip-base" class="clip clip-base">
+                <span class="clip-label">Base (Locked)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vocals track -->
+          <div class="track-row">
+            <div class="track-head track-head-vocals">
+              <div class="track-name">Vocals</div>
+              <div class="track-controls">
+                <button id="mute-vocals"  class="btn btn-secondary btn-mini" type="button">M</button>
+                <button id="solo-vocals"  class="btn btn-secondary btn-mini" type="button">S</button>
+                <button id="reset-vocals" class="btn btn-secondary btn-mini btn-reset" type="button" aria-label="Reset vocals" title="Reset">↺</button>
+              </div>
+            </div>
+            <div id="lane-vocals" class="track-lane">
+              <div id="playhead-vocals" class="lane-playhead"></div>
+              <div id="clip-vocals" class="clip clip-vocals" tabindex="0">
+                <canvas id="wave-vocals" class="clip-wave"></canvas>
+                <span class="clip-label">Vocals</span>
+                <div class="manual-clip-handle"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instrumental track -->
+          <div class="track-row">
+            <div class="track-head track-head-instrumental">
+              <div class="track-name">Instrumental</div>
+              <div class="track-controls">
+                <button id="mute-instrumental"  class="btn btn-secondary btn-mini" type="button">M</button>
+                <button id="solo-instrumental"  class="btn btn-secondary btn-mini" type="button">S</button>
+                <button id="reset-instrumental" class="btn btn-secondary btn-mini btn-reset" type="button" aria-label="Reset instrumental" title="Reset">↺</button>
+              </div>
+            </div>
+            <div id="lane-instrumental" class="track-lane">
+              <div id="playhead-instrumental" class="lane-playhead"></div>
+              <div id="clip-instrumental" class="clip clip-instrumental" tabindex="0">
+                <canvas id="wave-instrumental" class="clip-wave"></canvas>
+                <span class="clip-label">Instrumental</span>
+                <div class="manual-clip-handle"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /align-timeline -->
+
+        <footer class="align-footer">
+          <div class="transport-bar">
+            <button id="transport-restart" class="btn btn-secondary btn-mini-transport" type="button" aria-label="Return to start">
+              <!-- Skip-to-start: vertical bar + left-pointing triangle -->
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="2.2" height="11" rx="1.1" fill="currentColor"/>
+                <path d="M13.5,3 L5.5,8 L13.5,13 Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <button id="transport-play-toggle" class="btn btn-primary btn-mini-transport" type="button" aria-label="Play">
+              <!-- Hidden text label — JS updates this, SVGs reflect the state via CSS class -->
+              <span class="btn-label" style="display:none" aria-hidden="true">Play</span>
+              <!-- Play icon (right-pointing triangle) -->
+              <svg class="transport-icon-play" viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+                <path d="M3.5,2.5 L13.5,8 L3.5,13.5 Z" fill="currentColor"/>
+              </svg>
+              <!-- Pause icon (two vertical bars) -->
+              <svg class="transport-icon-pause" viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+                <rect x="3"   y="2.5" width="3.5" height="11" rx="1.5" fill="currentColor"/>
+                <rect x="9.5" y="2.5" width="3.5" height="11" rx="1.5" fill="currentColor"/>
+              </svg>
+            </button>
+            <span id="transport-time" class="transport-time">0.00s</span>
+          </div>
+          <div class="align-confirm-area">
+            <span class="align-hint">← → Arrow keys: nudge selected clip ~23ms</span>
+            <button id="manualAlignConfirmBtn" class="btn btn-primary btn-confirm" type="button">Confirm Alignment</button>
+          </div>
+        </footer>
+
+      </div><!-- /align-card -->
+    </section>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

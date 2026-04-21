@@ -1,0 +1,25 @@
+Custom Stem Injector
+Copyright (c) Fotsbeats 2026. All rights reserved.
+
+This software, source code, application bundle, supporting assets, and beta
+distribution materials are proprietary and confidential.
+
+Permission is granted only to approved testers to download, install, and use
+the provided beta builds solely for private evaluation and feedback.
+
+You may not:
+- redistribute or mirror the source or beta builds
+- sell, sublicense, lease, or commercially exploit the software
+- modify, reverse engineer, decompile, or disassemble the software except where
+  applicable law expressly prohibits that restriction
+- remove copyright, attribution, or release notices
+- share private test builds with unapproved third parties
+
+The software is provided "as is", without warranty of any kind, express or
+implied, including but not limited to warranties of merchantability, fitness
+for a particular purpose, and noninfringement. In no event shall Fotsbeats be
+liable for any claim, damages, or other liability arising from or related to
+the software or its use.
+
+For distribution or licensing requests, obtain written permission from
+Fotsbeats before sharing any part of this project or its packaged builds.

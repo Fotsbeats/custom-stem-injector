@@ -1,0 +1,26 @@
+Custom Stem Injector - Quick Start Guide
+
+Recommended Workflow (2-Stem)
+
+1. Open the app.
+2. Select 2 stems mode.
+3. Select your base audio file.
+4. Click Step 1: Extract 2 Stems (Kim-2).
+5. Wait until extraction completes and the 2-stem fields auto-fill.
+6. Click Step 2: Prepare Serato Files.
+7. Click Step 3: Build Stem File.
+
+After Build Completes
+
+1. Open the prepared output folder shown by the app.
+2. Locate the original song file and the matching .serato-stems file.
+3. Keep both files together in the same folder.
+4. Move both files to your desired music/library location.
+5. Add the song to Serato.
+
+Important Notes
+
+- Start in 2-stem mode unless you specifically need 4-stem inputs.
+- Do not separate the song file from its .serato-stems sidecar.
+- If moving files later, always move the song and .serato-stems together.
+- If macOS prompts on first launch on another machine, right-click the app and choose Open.
