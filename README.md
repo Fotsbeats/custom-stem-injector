@@ -2,7 +2,7 @@
 
 Custom Stem Injector is a macOS desktop app for building Serato-compatible custom stem files from your own source audio and prepared stem layers. It wraps the existing Python stem-injection pipeline in a standalone Electron app so testers can run the full workflow through a guided UI instead of command-line tools.
 
-This repository is the private source-of-truth repo for the project. Ongoing development happens here. Downloadable tester builds are distributed through GitHub Releases for this same repo rather than through branch ZIP downloads.
+This repository contains the source, packaging scripts, and release documentation for the project. Downloadable tester builds are distributed through GitHub Releases rather than through branch ZIP downloads.
 
 The current beta build is aimed at Apple Silicon testers and focuses on a stable three-step workflow:
 
@@ -67,15 +67,12 @@ That release zip contains:
 
 ## Development workflow
 
-Use this folder as the long-term working project:
-
-- `/Users/zachsilverman/Desktop/Custom Stem Dev`
+Use this repository as the long-term working project.
 
 Treat these as generated outputs, not source:
 
-- `/Users/zachsilverman/Desktop/Custom Stem Dev/Public Builds/Custom Stem Injector Beta`
-- `/Users/zachsilverman/Desktop/Custom Stem Dev/Public Builds/Custom Stem Injector Beta.zip`
-- `/Users/zachsilverman/Desktop/Custom Stem Injector/Custom Stem Injector.app`
+- `Public Builds/Custom Stem Injector Beta`
+- `Public Builds/Custom Stem Injector Beta.zip`
 
 Normal loop:
 
@@ -89,15 +86,15 @@ Normal loop:
 From the repo root:
 
 ```bash
-cd "/Users/zachsilverman/Desktop/Custom Stem Dev"
 ./Build\ Public\ Beta.command
 ```
 
 That script:
 
-- copies the working packaged shell app into a fresh Desktop beta folder
+- builds a fresh beta app shell from Electron
 - syncs the latest runtime from this repo into the app bundle
-- removes stale signing artifacts
+- applies the app icon and bundle metadata
+- refreshes signing after packaging changes
 - adds tester-facing documentation and helper files
 - builds `Custom Stem Injector Beta.zip`
 

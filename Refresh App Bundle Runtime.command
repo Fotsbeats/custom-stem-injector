@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP_RT="$ROOT/Custom Stem Dev.app/Contents/Resources/AppRuntime"
-PUBLIC_RT="/Users/zachsilverman/Desktop/Custom Stem Injector/Custom Stem Injector.app/Contents/Resources/app"
 
 sync_runtime() {
   local target="$1"
@@ -25,9 +24,3 @@ sync_runtime() {
 }
 
 sync_runtime "$APP_RT" "embedded app"
-
-if [ -d "$PUBLIC_RT/.." ]; then
-  sync_runtime "$PUBLIC_RT" "public app"
-else
-  echo "Public app runtime not found, skipped: $PUBLIC_RT"
-fi
