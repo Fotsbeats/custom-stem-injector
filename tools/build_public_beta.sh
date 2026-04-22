@@ -44,15 +44,18 @@ customize_shell() {
   local app_path="$1"
   local plist="$app_path/Contents/Info.plist"
   local main_icon="$app_path/Contents/Resources/electron.icns"
+  local custom_icon="$app_path/Contents/Resources/CustomStemInjector.icns"
 
   if [ -f "$SOURCE_ICON" ]; then
     cp -f "$SOURCE_ICON" "$main_icon"
+    cp -f "$SOURCE_ICON" "$custom_icon"
   fi
 
   if [ -f "$plist" ]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Custom Stem Injector" "$plist" >/dev/null 2>&1 || true
     /usr/libexec/PlistBuddy -c "Set :CFBundleName Custom Stem Injector" "$plist" >/dev/null 2>&1 || true
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.fotsbeats.customstems" "$plist" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile CustomStemInjector" "$plist" >/dev/null 2>&1 || true
     /usr/libexec/PlistBuddy -c "Set :LSApplicationCategoryType public.app-category.music" "$plist" >/dev/null 2>&1 || true
   fi
 }

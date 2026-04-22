@@ -16,7 +16,6 @@ const state = {
   mode: 'two',
   step1Mode: 'extract',
   activeStep: 'extract',
-  debugMode: false,
   activeProgressToken: '',
   originalBasePath: '',
   disableBaseMetadataCopy: false,
@@ -32,7 +31,6 @@ const fieldGrid = document.getElementById('fieldGrid');
 const sourceContext = document.getElementById('sourceContext');
 const statusText = document.getElementById('statusText');
 const outputBox = document.getElementById('outputBox');
-const debugModeToggle = document.getElementById('debugModeToggle');
 const extractProgressWrap = document.getElementById('extractProgressWrap');
 const extractProgressBar = document.getElementById('extractProgressBar');
 const extractProgressText = document.getElementById('extractProgressText');
@@ -207,17 +205,10 @@ function setOutput(text) {
 }
 
 function appendOutputLine(text = '') {
-  if (!state.debugMode) return;
-  if (!outputBox.textContent) {
-    outputBox.textContent = text;
-  } else {
-    outputBox.textContent += `\n${text}`;
-  }
-  outputBox.scrollTop = outputBox.scrollHeight;
+  void text;
 }
 
 function setRetailOutput(title, steps = [], notes = []) {
-  if (state.debugMode) return;
   const lines = [];
   if (title) lines.push(title);
   if (steps.length) {
@@ -332,35 +323,19 @@ function summarizePayload(payload) {
 }
 
 function startBuildTicker(payload) {
-  if (!state.debugMode) return;
   if (activeBuildTicker) {
-    clearInterval(activeBuildTicker.timer);
+    if (activeBuildTicker.timer) clearInterval(activeBuildTicker.timer);
     activeBuildTicker = null;
   }
 
   const startedAt = Date.now();
-  const lines = summarizePayload(payload);
-  let banterIdx = 0;
-  let spinIdx = 0;
-  setOutput('');
-  lines.forEach((line) => appendOutputLine(line));
-  appendOutputLine('[0.0s] Build queue accepted. Rolling up sleeves...');
-
-  const timer = setInterval(() => {
-    const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
-    const spinner = spinnerFrames[spinIdx % spinnerFrames.length];
-    lines.push(`[${elapsed}s] ${spinner} ${buildBanter[banterIdx % buildBanter.length]}`);
-    appendOutputLine(lines[lines.length - 1]);
-    banterIdx += 1;
-    spinIdx += 1;
-  }, 650);
-
-  activeBuildTicker = { timer, startedAt };
+  void payload;
+  activeBuildTicker = { timer: null, startedAt };
 }
 
 function stopBuildTicker() {
   if (!activeBuildTicker) return 0;
-  clearInterval(activeBuildTicker.timer);
+  if (activeBuildTicker.timer) clearInterval(activeBuildTicker.timer);
   const elapsedMs = Date.now() - activeBuildTicker.startedAt;
   activeBuildTicker = null;
   return elapsedMs;
@@ -644,24 +619,22 @@ async function runBuild() {
     const elapsedSec = (stopBuildTicker() / 1000).toFixed(1);
     if (result.ok) {
       setStatus('Build finished successfully');
-      if (!state.debugMode) {
-        const finalBase = result.report?.final_outputs?.base || result.report?.prepared_outputs?.base || state.values.base;
-        const finalSidecar = result.report?.final_outputs?.sidecar || result.report?.output_sidecar || '(unknown)';
-        const notes = [];
-        if (Array.isArray(result.report?.warnings) && result.report.warnings.length) {
-          notes.push(result.report.warnings[0]);
-        }
-        setRetailOutput(
-          'Build complete.',
-          [
-            `Final base: ${finalBase}`,
-            `Final sidecar: ${finalSidecar}`,
-            'Recommended: reopen Serato after build, then refresh/import the track.',
-            'Import or refresh this base track in Serato.',
-          ],
-          notes,
-        );
+      const finalBase = result.report?.final_outputs?.base || result.report?.prepared_outputs?.base || state.values.base;
+      const finalSidecar = result.report?.final_outputs?.sidecar || result.report?.output_sidecar || '(unknown)';
+      const notes = [];
+      if (Array.isArray(result.report?.warnings) && result.report.warnings.length) {
+        notes.push(result.report.warnings[0]);
       }
+      setRetailOutput(
+        'Build complete.',
+        [
+          `Final base: ${finalBase}`,
+          `Final sidecar: ${finalSidecar}`,
+          'Recommended: reopen Serato after build, then refresh/import the track.',
+          'Import or refresh this base track in Serato.',
+        ],
+        notes,
+      );
       appendOutputLine('');
       appendOutputLine(`Build complete in ${elapsedSec}s.`);
       appendOutputLine('Custom stems injected to .stems file');
@@ -807,16 +780,14 @@ async function runStep1() {
         setTimeout(() => setExtractProgress(false), 900);
       }
       setOutput('');
-      if (!state.debugMode) {
-        const steps = [];
-        if (result.report?.extract_folder) {
-          steps.push(`Extracted files: ${result.report.extract_folder}`);
-        } else if (result.report?.align_folder) {
-          steps.push(`Aligned files: ${result.report.align_folder}`);
-        }
-        steps.push('Review auto-filled files, then click Prepare Files.');
-        setRetailOutput(runAlign ? 'Alignment complete.' : 'Extraction complete.', steps);
+      const steps = [];
+      if (result.report?.extract_folder) {
+        steps.push(`Extracted files: ${result.report.extract_folder}`);
+      } else if (result.report?.align_folder) {
+        steps.push(`Aligned files: ${result.report.align_folder}`);
       }
+      steps.push('Review auto-filled files, then click Prepare Files.');
+      setRetailOutput(runAlign ? 'Alignment complete.' : 'Extraction complete.', steps);
       if (result.report) {
         if (!runAlign && Array.isArray(result.report.onnx_providers) && result.report.onnx_providers.length) {
           const providerLabel = result.report.onnx_providers.join(', ');
@@ -1528,22 +1499,20 @@ async function runPrepare() {
       setActionHighlight('build');
       setStatus('Prepare finished successfully');
       setOutput('');
-      if (!state.debugMode) {
-        const folder = result.report?.prep_folder || '(unknown)';
-        const notes = [];
-        if (Number(result.report?.stem_gain_db || 0) > 0) {
-          notes.push(`Stem gain applied: +${Number(result.report.stem_gain_db).toFixed(1)} dB`);
-        }
-        setRetailOutput(
-          'Prepare complete.',
-          [
-            `Prepared folder: ${folder}`,
-            'Before Step 3, close Serato (recommended).',
-            'Step 3: click Build .Stem.',
-          ],
-          notes,
-        );
+      const folder = result.report?.prep_folder || '(unknown)';
+      const notes = [];
+      if (Number(result.report?.stem_gain_db || 0) > 0) {
+        notes.push(`Stem gain applied: +${Number(result.report.stem_gain_db).toFixed(1)} dB`);
       }
+      setRetailOutput(
+        'Prepare complete.',
+        [
+          `Prepared folder: ${folder}`,
+          'Before Step 3, close Serato (recommended).',
+          'Step 3: click Build .Stem.',
+        ],
+        notes,
+      );
       if (result.report) {
         const folder = result.report.prep_folder || '(unknown)';
         appendOutputLine(`Prepared stems placed in "${folder}"`);
@@ -1630,7 +1599,6 @@ function clearAll() {
       'Step 3: Build .Stem.',
     ],
   );
-  if (state.debugMode) setOutput('Build output will appear here.');
   setActionHighlight('extract');
   setProcessing(false);
 }
@@ -1647,23 +1615,6 @@ function init() {
   setupManualAlignHandlers();
   if (window.stemsApi?.onBuildProgress) {
     window.stemsApi.onBuildProgress(handleBuildProgress);
-  }
-  if (debugModeToggle) {
-    debugModeToggle.checked = state.debugMode;
-    debugModeToggle.addEventListener('change', (e) => {
-      state.debugMode = Boolean(e.target.checked);
-      if (state.debugMode) {
-        setOutput('Debug mode enabled. Detailed logs will appear here.');
-      } else {
-        setRetailOutput(
-          'Retail mode enabled.',
-          [
-            'Simple status and instructions are shown here.',
-            'Use Debug Mode for full logs.',
-          ],
-        );
-      }
-    });
   }
   setExtractProgress(false);
   setRetailOutput(
