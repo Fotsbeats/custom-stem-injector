@@ -6,8 +6,9 @@ It supports:
 
 - 2-stem workflows using a base track plus vocals/instrumental
 - 4-stem workflows using vocals, bass, drums, and melody
-- built-in stem extraction for 2-stem projects
+- built-in 2-stem and 4-stem extraction
 - stem alignment tools for matching stems to a base song
+- industry-leading separation models focused on high-quality stem extraction
 
 ## Download
 
