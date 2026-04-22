@@ -1,10 +1,15 @@
 # Custom Stem Injector Beta
 
-Version: `0.1.0-beta.1`
+Version: `0.1.0-beta.2`
 
 ## Release Summary
 
 Custom Stem Injector Beta is an Apple Silicon macOS test build for approved testers.
+
+## What's new in Beta 2
+
+- bundled Python runtime inside the app so testers should not need to install Python separately
+- updated beta packaging flow to embed and validate the Python runtime during build
 
 ## Included asset
 
