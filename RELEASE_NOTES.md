@@ -1,15 +1,16 @@
 # Custom Stem Injector Beta
 
-Version: `0.1.0-beta.2`
+Version: `0.1.0-beta.3`
 
 ## Release Summary
 
 Custom Stem Injector Beta is an Apple Silicon macOS test build for approved testers.
 
-## What's new in Beta 2
+## What's new in Beta 3
 
-- bundled Python runtime inside the app so testers should not need to install Python separately
-- updated beta packaging flow to embed and validate the Python runtime during build
+- fixed packaged extraction failure caused by read-only app-bundle writes under App Translocation
+- moved mutable runtime support files and CoreML temp data into the writable injector work area under `~/Music/Custom Stem Injector`
+- keeps bundled Python runtime support from Beta 2 so testers should not need to install Python separately
 
 ## Included asset
 

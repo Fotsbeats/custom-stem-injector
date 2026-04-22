@@ -64,35 +64,63 @@ def _tool_path(name: str) -> str | None:
     return shutil.which(name)
 
 
+def _runtime_support_root() -> Path:
+    root = _injector_work_root() / "runtime_support"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _ensure_runtime_link_or_copy(source: Path, target: Path) -> None:
+    if not source.exists():
+        raise RuntimeError(f"Bundled runtime asset missing: {source}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() or target.is_symlink():
+        return
+    try:
+        target.symlink_to(source)
+    except OSError:
+        shutil.copy2(source, target)
+
+
+def _ensure_runtime_json(path: Path, default_obj: dict) -> dict:
+    try:
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    obj = dict(default_obj)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj), encoding="utf-8")
+    return obj
+
+
 def _ensure_demucs_runtime_assets(app_root: Path) -> tuple[Path, Path]:
-    runtime_dir = app_root / "tools" / "kim2_runtime"
+    bundled_runtime_dir = app_root / "tools" / "kim2_runtime"
+    runtime_dir = _runtime_support_root() / "kim2_runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
+    bundled_weight = bundled_runtime_dir / DEMUCS_WEIGHT_FILENAME
+    bundled_yaml = bundled_runtime_dir / DEMUCS_MODEL_FILENAME
     demucs_weight = runtime_dir / DEMUCS_WEIGHT_FILENAME
     demucs_yaml = runtime_dir / DEMUCS_MODEL_FILENAME
 
-    if not demucs_weight.exists():
-        raise RuntimeError(
-            "Bundled Demucs weights missing. Expected local file: "
-            f"{demucs_weight}"
-        )
+    _ensure_runtime_link_or_copy(bundled_weight, demucs_weight)
 
     valid_yaml = False
-    if demucs_yaml.exists():
+    if bundled_yaml.exists():
         try:
-            content = demucs_yaml.read_text(encoding="utf-8")
+            content = bundled_yaml.read_text(encoding="utf-8")
             valid_yaml = "models" in content and "955717e8" in content
         except Exception:
             valid_yaml = False
     if not valid_yaml:
         demucs_yaml.write_text("models: ['955717e8']\n", encoding="utf-8")
+    elif not demucs_yaml.exists():
+        shutil.copy2(bundled_yaml, demucs_yaml)
 
     checks_dst = runtime_dir / "download_checks.json"
-    try:
-        checks_obj = json.loads(checks_dst.read_text(encoding="utf-8")) if checks_dst.exists() else {}
-    except Exception:
-        checks_obj = {}
-    if not isinstance(checks_obj, dict):
-        checks_obj = {}
+    checks_obj = _ensure_runtime_json(checks_dst, {})
     checks_obj.setdefault("vr_download_list", {})
     checks_obj.setdefault("vr_download_vip_list", {})
     checks_obj.setdefault("mdx_download_list", {})
@@ -916,27 +944,23 @@ def _pick_stems(output_dir: Path) -> tuple[Path | None, Path | None]:
 
 
 def _ensure_kim2_runtime(app_root: Path) -> tuple[Path, Path]:
-    runtime_dir = app_root / "tools" / "kim2_runtime"
+    bundled_runtime_dir = app_root / "tools" / "kim2_runtime"
+    runtime_dir = _runtime_support_root() / "kim2_runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
+    bundled_model = bundled_runtime_dir / "Kim_Vocal_2.onnx"
+    bundled_mdx_data = bundled_runtime_dir / "mdx_model_data.json"
     model_dst = runtime_dir / "Kim_Vocal_2.onnx"
-    if not model_dst.exists():
-        raise RuntimeError(f"Bundled Kim-2 model missing: {model_dst}")
+    _ensure_runtime_link_or_copy(bundled_model, model_dst)
 
     mdx_data_dst = runtime_dir / "mdx_model_data.json"
-    if not mdx_data_dst.exists():
-        raise RuntimeError(f"Bundled MDX model data missing: {mdx_data_dst}")
+    _ensure_runtime_link_or_copy(bundled_mdx_data, mdx_data_dst)
 
     vr_data_dst = runtime_dir / "vr_model_data.json"
     if not vr_data_dst.exists():
         vr_data_dst.write_text("{}", encoding="utf-8")
 
     checks_dst = runtime_dir / "download_checks.json"
-    try:
-        checks_obj = json.loads(checks_dst.read_text(encoding="utf-8")) if checks_dst.exists() else {}
-    except Exception:
-        checks_obj = {}
-    if not isinstance(checks_obj, dict):
-        checks_obj = {}
+    checks_obj = _ensure_runtime_json(checks_dst, {})
     checks_obj.setdefault("vr_download_list", {})
     checks_obj.setdefault("vr_download_vip_list", {})
     checks_obj.setdefault("mdx_download_list", {})
@@ -994,7 +1018,7 @@ def _run_kim2(base_audio: Path, out_dir: Path, *, prefer_gpu: bool = True) -> di
     os.environ["PATH"] = f"{app_root / 'bin'}:{os.environ.get('PATH', '')}"
     os.environ.setdefault("TQDM_DISABLE", "1")
     warnings.filterwarnings("ignore", message="urllib3 v2 only supports OpenSSL*")
-    coreml_tmp = app_root / "tmp_coreml"
+    coreml_tmp = _runtime_support_root() / "tmp_coreml"
     coreml_tmp.mkdir(parents=True, exist_ok=True)
     os.environ["TMPDIR"] = str(coreml_tmp)
     os.environ["TEMP"] = str(coreml_tmp)
