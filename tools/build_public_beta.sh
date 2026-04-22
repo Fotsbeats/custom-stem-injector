@@ -15,6 +15,12 @@ BETA_ZIP="$BETA_ROOT/Custom Stem Injector Beta.zip"
 SOURCE_BETA_README="$ROOT/distribution/BETA_README.txt"
 SOURCE_LICENSE="$ROOT/LICENSE.txt"
 SOURCE_ICON="$ROOT/tools/AppIcon.icns"
+PYTHON_PREFIX="$(python3 -c 'import sys; print(sys.prefix)')"
+PYTHON_VERSION="$(python3 -c 'import sys; print("{}.{}".format(sys.version_info.major, sys.version_info.minor))')"
+SOURCE_PYTHON_FRAMEWORK="$(cd "$PYTHON_PREFIX/../.." && pwd)"
+FRAMEWORKS_DIR="$BETA_APP/Contents/Frameworks"
+EMBEDDED_PYTHON_FRAMEWORK="$FRAMEWORKS_DIR/Python3.framework"
+EMBEDDED_PYTHON_BIN="$EMBEDDED_PYTHON_FRAMEWORK/Versions/$PYTHON_VERSION/bin/python$PYTHON_VERSION"
 
 require_tool() {
   local tool="$1"
@@ -82,6 +88,11 @@ if [ ! -f "$SOURCE_ICON" ]; then
   exit 1
 fi
 
+if [ ! -d "$SOURCE_PYTHON_FRAMEWORK" ]; then
+  echo "Bundled Python framework source not found: $SOURCE_PYTHON_FRAMEWORK" >&2
+  exit 1
+fi
+
 echo "1) Quitting running app instances"
 osascript -e 'tell application id "com.fotsbeats.customstems" to quit' >/dev/null 2>&1 || true
 sleep 1
@@ -107,28 +118,35 @@ rsync -a --delete --delete-excluded \
   --exclude '*' \
   "$ROOT/" "$BETA_RUNTIME/"
 
-echo "4) Removing stale signatures so the app is cleanly unsigned"
+echo "4) Embedding Python runtime"
+mkdir -p "$FRAMEWORKS_DIR"
+rm -rf "$EMBEDDED_PYTHON_FRAMEWORK"
+ditto "$SOURCE_PYTHON_FRAMEWORK" "$EMBEDDED_PYTHON_FRAMEWORK"
+
+echo "5) Removing stale signatures so the app is cleanly unsigned"
 strip_signatures "$BETA_APP"
 xattr -cr "$BETA_APP" >/dev/null 2>&1 || true
 strip_appledouble "$BETA_DIR"
 
-echo "5) Writing beta helper files"
+echo "6) Writing beta helper files"
 cp -f "$ROOT/Open Custom Stem Injector.command" "$BETA_HELPER"
 chmod +x "$BETA_HELPER"
 cp -f "$SOURCE_BETA_README" "$BETA_README"
 cp -f "$SOURCE_LICENSE" "$BETA_LICENSE"
 strip_appledouble "$BETA_DIR"
 
-echo "6) Applying fresh ad hoc signature"
+echo "7) Applying fresh ad hoc signature"
 codesign --force --deep --sign - "$BETA_APP" >/dev/null 2>&1
 
-echo "7) Building zip artifact"
+echo "8) Building zip artifact"
 rm -f "$BETA_ZIP"
 ditto -c -k --keepParent --norsrc "$BETA_DIR" "$BETA_ZIP"
 
-echo "8) Validation"
+echo "9) Validation"
 spctl -a -vv "$BETA_APP" || true
 codesign -dvvv "$BETA_APP" 2>&1 | sed -n '1,20p' || true
+"$EMBEDDED_PYTHON_BIN" -c "import sys; print(sys.executable); print(sys.prefix)" || true
+"$EMBEDDED_PYTHON_BIN" -c "import sys; sys.path.insert(0, r'$BETA_RUNTIME/tools/_pydeps'); import mutagen, numpy; print('Embedded Python import check: ok')" || true
 
 echo
 echo "Created:"

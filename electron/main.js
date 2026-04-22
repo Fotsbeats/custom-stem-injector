@@ -2,8 +2,42 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs/promises');
+const fsSync = require('fs');
 
 const APP_DIR = path.resolve(__dirname, '..');
+const BUNDLED_PYTHON_VERSION = '3.9';
+
+function buildPythonEnv(pythonCmd) {
+  const env = { ...process.env, PYTHONNOUSERSITE: '1' };
+  const normalized = String(pythonCmd || '');
+  const bundledMarker = `${path.sep}Python3.framework${path.sep}`;
+
+  if (normalized.includes(bundledMarker)) {
+    const prefix = path.resolve(path.dirname(normalized), '..');
+    const pydeps = path.join(APP_DIR, 'tools', '_pydeps');
+    env.PYTHONHOME = prefix;
+    env.PYTHONPATH = fsSync.existsSync(pydeps) ? pydeps : '';
+  }
+
+  return env;
+}
+
+function getBundledPythonCandidates() {
+  const frameworkRoot = path.join(process.resourcesPath, '..', 'Frameworks', 'Python3.framework');
+  const versionRoot = path.join(frameworkRoot, 'Versions', BUNDLED_PYTHON_VERSION);
+  return [
+    path.join(versionRoot, 'bin', `python${BUNDLED_PYTHON_VERSION}`),
+    path.join(versionRoot, 'bin', 'python3'),
+  ];
+}
+
+function getPythonCandidates() {
+  return [
+    ...getBundledPythonCandidates(),
+    'python3',
+    'python',
+  ];
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -98,7 +132,10 @@ ipcMain.handle('read-audio-bytes', async (_event, filePath) => {
 function runBridge(pythonCmd, payload) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(APP_DIR, 'tools', 'electron_build_bridge.py');
-    const child = spawn(pythonCmd, [scriptPath], { cwd: APP_DIR });
+    const child = spawn(pythonCmd, [scriptPath], {
+      cwd: APP_DIR,
+      env: buildPythonEnv(pythonCmd),
+    });
 
     let stdout = '';
     let stderr = '';
@@ -151,12 +188,24 @@ function runBridge(pythonCmd, payload) {
 
 ipcMain.handle('run-build', async (_event, payload) => {
   try {
-    try {
-      return await runBridge('python3', payload);
-    } catch (err) {
-      if (!String(err?.message || '').toLowerCase().includes('enoent')) throw err;
-      return await runBridge('python', payload);
+    const attempts = [];
+    for (const pythonCmd of getPythonCandidates()) {
+      try {
+        return await runBridge(pythonCmd, payload);
+      } catch (err) {
+        const msg = String(err?.message || err);
+        const code = String(err?.code || '');
+        const lower = msg.toLowerCase();
+        const isMissingCmd =
+          code === 'ENOENT' ||
+          lower.includes('enoent') ||
+          lower.includes('spawn ') ||
+          lower.includes('not found');
+        attempts.push(`${pythonCmd}: ${msg}`);
+        if (!isMissingCmd) throw err;
+      }
     }
+    throw new Error(`No usable Python runtime found. Attempts: ${attempts.join(' | ')}`);
   } catch (err) {
     return {
       ok: false,

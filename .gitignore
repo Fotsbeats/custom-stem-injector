@@ -32,3 +32,4 @@ tools/kim2_runtime/*.ckpt
 # Internal agent/session notes not meant for the public repo
 AGENTS.md
 frontend.md
+PaidApp.md

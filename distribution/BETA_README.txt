@@ -22,6 +22,7 @@ Important notes:
 - This build is for Apple Silicon Macs only.
 - Intel Macs are not supported by this beta package.
 - Because the app is unsigned, Gatekeeper approval is expected on first run.
+- Python is bundled inside the app. Testers should not need to install Python separately.
 - Use the app only for private evaluation and tester feedback.
 - Do not redistribute this build without permission.
 

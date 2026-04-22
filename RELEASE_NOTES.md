@@ -22,7 +22,6 @@ Use the Release asset download, not the repository branch ZIP from the `Code` me
 
 - Apple Silicon only
 - distributed through GitHub Releases
-- release zip should not be committed to the repo branch
 
 ## Copyright
 
