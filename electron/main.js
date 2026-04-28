@@ -170,13 +170,16 @@ function runBridge(pythonCmd, payload) {
     child.on('error', (err) => reject(err));
 
     child.on('close', (code) => {
-      if (code !== 0) {
-        return reject(new Error(stderr || stdout || `Bridge exited with code ${code}`));
-      }
       try {
         const parsed = JSON.parse(stdout);
+        if (code !== 0) {
+          return resolve(parsed);
+        }
         resolve(parsed);
       } catch (err) {
+        if (code !== 0) {
+          return reject(new Error(stderr || stdout || `Bridge exited with code ${code}`));
+        }
         reject(new Error(`Invalid bridge response: ${stdout || stderr || err.message}`));
       }
     });

@@ -74,7 +74,27 @@ def _ensure_runtime_link_or_copy(source: Path, target: Path) -> None:
     if not source.exists():
         raise RuntimeError(f"Bundled runtime asset missing: {source}")
     target.parent.mkdir(parents=True, exist_ok=True)
-    if target.exists() or target.is_symlink():
+    if target.is_symlink():
+        try:
+            if target.resolve() == source.resolve() and target.exists():
+                return
+        except OSError:
+            pass
+        try:
+            target.unlink()
+        except OSError:
+            pass
+    elif target.exists():
+        try:
+            if target.stat().st_size == source.stat().st_size:
+                return
+        except OSError:
+            pass
+        try:
+            target.unlink()
+        except OSError:
+            pass
+    if target.exists():
         return
     try:
         target.symlink_to(source)
@@ -297,7 +317,11 @@ def _run_capture(cmd: list[str], timeout: float | None = None) -> subprocess.Com
 
 
 def _run_quiet(cmd: list[str], timeout: float | None = None) -> None:
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout)
+    proc = subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, timeout=timeout)
+    if proc.returncode != 0:
+        err = (proc.stderr or "").strip()
+        tool = Path(cmd[0]).name if cmd else "command"
+        raise RuntimeError(f"{tool} failed with exit status {proc.returncode}: {err or 'no stderr output'}")
 
 
 def _normalized(signal):
@@ -520,8 +544,7 @@ def _render_aligned_mp3(
     out_duration_sec: float,
 ) -> None:
     delay_ms = max(0, int(round(pre_pad_sec * 1000.0)))
-    delay_spec = f"{delay_ms}|{delay_ms}"
-    afilter = f"adelay={delay_spec},apad,atrim=0:{out_duration_sec:.6f}"
+    afilter = f"adelay={delay_ms}:all=1,apad"
     cmd = [
         ffmpeg,
         "-nostdin",
@@ -536,6 +559,8 @@ def _render_aligned_mp3(
         "-vn",
         "-af",
         afilter,
+        "-t",
+        f"{out_duration_sec:.6f}",
         "-ar",
         "44100",
         "-ac",
@@ -576,10 +601,9 @@ def _render_clip_segment_mp3(
         raise RuntimeError(f"Manual alignment clip became empty for {src.name}")
 
     delay_ms = max(0, int(round(offset * 1000.0)))
-    delay_spec = f"{delay_ms}|{delay_ms}"
     afilter = (
         f"atrim=start={clip_start:.6f}:end={clip_end:.6f},"
-        f"asetpts=PTS-STARTPTS,adelay={delay_spec},apad,atrim=0:{out_duration_sec:.6f}"
+        f"asetpts=PTS-STARTPTS,adelay={delay_ms}:all=1,apad"
     )
     cmd = [
         ffmpeg,
@@ -595,6 +619,8 @@ def _render_clip_segment_mp3(
         "-vn",
         "-af",
         afilter,
+        "-t",
+        f"{out_duration_sec:.6f}",
         "-ar",
         "44100",
         "-ac",
@@ -982,7 +1008,40 @@ def _patch_audio_separator_loader() -> None:
     import audio_separator.separator.common_separator as common_separator
 
     def _load(path: str, mono: bool = False, sr: int = 44100):
-        data, in_sr = sf.read(path, always_2d=True)
+        try:
+            data, in_sr = sf.read(path, always_2d=True)
+        except Exception:
+            ffmpeg = _ffmpeg_path()
+            if not ffmpeg:
+                raise
+            target_sr = int(sr or 44100)
+            channels = 1 if mono else 2
+            cmd = [
+                ffmpeg,
+                "-nostdin",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                path,
+                "-vn",
+                "-ac",
+                str(channels),
+                "-ar",
+                str(target_sr),
+                "-f",
+                "f32le",
+                "-",
+            ]
+            raw = subprocess.run(cmd, check=True, capture_output=True).stdout
+            audio = np.frombuffer(raw, dtype=np.float32)
+            if audio.size == 0:
+                raise RuntimeError(f"No audio decoded for Kim-2 input: {path}")
+            if channels == 1:
+                return audio, target_sr
+            usable = (audio.size // channels) * channels
+            data = audio[:usable].reshape(-1, channels)
+            in_sr = target_sr
         data = data.astype("float32")
         if data.shape[1] == 1:
             data = np.repeat(data, 2, axis=1)

@@ -12,6 +12,7 @@ BETA_HELPER="$BETA_DIR/Open Custom Stem Injector.command"
 BETA_README="$BETA_DIR/README.txt"
 BETA_LICENSE="$BETA_DIR/LICENSE.txt"
 BETA_ZIP="$BETA_ROOT/Custom Stem Injector Beta.zip"
+RELEASE_ZIP="$BETA_ROOT/Custom.Stem.Injector.Beta.zip"
 SOURCE_BETA_README="$ROOT/distribution/BETA_README.txt"
 SOURCE_LICENSE="$ROOT/LICENSE.txt"
 SOURCE_ICON="$ROOT/tools/AppIcon.icns"
@@ -40,6 +41,113 @@ strip_appledouble() {
   find "$target" -name '._*' -type f -delete
 }
 
+is_system_dylib() {
+  local dep="$1"
+  case "$dep" in
+    /System/*|/usr/lib/*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+bundle_ffmpeg_dylibs() {
+  local ffmpeg_bin="$BETA_RUNTIME/bin/ffmpeg"
+  local ffprobe_bin="$BETA_RUNTIME/bin/ffprobe"
+  local dylib_dir="$BETA_RUNTIME/bin/ffmpeg-libs"
+  local rpath="@executable_path/ffmpeg-libs"
+  local -a roots targets deps pending lib_files
+  local -A copied
+  local item dep dest dep_name target source_ffprobe
+
+  if [ ! -x "$ffmpeg_bin" ]; then
+    echo "Bundled ffmpeg not found or not executable: $ffmpeg_bin" >&2
+    exit 1
+  fi
+
+  if [ ! -x "$ffprobe_bin" ]; then
+    source_ffprobe="$(command -v ffprobe || true)"
+    if [ -n "$source_ffprobe" ] && [ -x "$source_ffprobe" ]; then
+      cp -f "$source_ffprobe" "$ffprobe_bin"
+      chmod +x "$ffprobe_bin"
+    fi
+  fi
+
+  roots=("$ffmpeg_bin")
+  if [ -x "$ffprobe_bin" ]; then
+    roots+=("$ffprobe_bin")
+  fi
+
+  rm -rf "$dylib_dir"
+  mkdir -p "$dylib_dir"
+  pending=("${roots[@]}")
+
+  while [ "${#pending[@]}" -gt 0 ]; do
+    item="${pending[1]}"
+    pending=("${pending[@]:1}")
+    deps=("${(@f)$(otool -L "$item" | awk 'NR > 1 { print $1 }')}")
+    for dep in "${deps[@]}"; do
+      if is_system_dylib "$dep"; then
+        continue
+      fi
+      case "$dep" in
+        @rpath/*|@loader_path/*|@executable_path/*)
+          continue
+          ;;
+      esac
+      if [ ! -f "$dep" ]; then
+        echo "Missing ffmpeg dependency: $dep" >&2
+        exit 1
+      fi
+      dep_name="${dep:t}"
+      dest="$dylib_dir/$dep_name"
+      if [[ -z "${copied[$dep_name]:-}" ]]; then
+        cp -f "$dep" "$dest"
+        chmod u+w "$dest"
+        copied[$dep_name]="$dest"
+        pending+=("$dest")
+      fi
+    done
+  done
+
+  targets=("${roots[@]}")
+  lib_files=("$dylib_dir"/*.dylib(N))
+  targets+=("${lib_files[@]}")
+
+  for target in "${targets[@]}"; do
+    deps=("${(@f)$(otool -L "$target" | awk 'NR > 1 { print $1 }')}")
+    for dep in "${deps[@]}"; do
+      if is_system_dylib "$dep"; then
+        continue
+      fi
+      case "$dep" in
+        @rpath/*|@loader_path/*|@executable_path/*)
+          continue
+          ;;
+      esac
+      dep_name="${dep:t}"
+      if [ -f "$dylib_dir/$dep_name" ]; then
+        install_name_tool -change "$dep" "@rpath/$dep_name" "$target"
+      fi
+    done
+  done
+
+  for target in "$dylib_dir"/*.dylib; do
+    [ -f "$target" ] || continue
+    install_name_tool -id "@rpath/${target:t}" "$target"
+  done
+
+  for target in "${roots[@]}"; do
+    if ! otool -l "$target" | grep -F "$rpath" >/dev/null 2>&1; then
+      install_name_tool -add_rpath "$rpath" "$target"
+    fi
+  done
+
+  for target in "${targets[@]}"; do
+    codesign --force --sign - "$target" >/dev/null 2>&1
+  done
+}
+
 customize_shell() {
   local app_path="$1"
   local plist="$app_path/Contents/Info.plist"
@@ -63,6 +171,8 @@ customize_shell() {
 require_tool rsync
 require_tool ditto
 require_tool codesign
+require_tool install_name_tool
+require_tool otool
 require_tool xattr
 require_tool zip
 
@@ -126,28 +236,34 @@ mkdir -p "$FRAMEWORKS_DIR"
 rm -rf "$EMBEDDED_PYTHON_FRAMEWORK"
 ditto "$SOURCE_PYTHON_FRAMEWORK" "$EMBEDDED_PYTHON_FRAMEWORK"
 
-echo "5) Removing stale signatures so the app is cleanly unsigned"
+echo "5) Bundling ffmpeg runtime libraries"
+bundle_ffmpeg_dylibs
+
+echo "6) Removing stale signatures so the app is cleanly unsigned"
 strip_signatures "$BETA_APP"
 xattr -cr "$BETA_APP" >/dev/null 2>&1 || true
 strip_appledouble "$BETA_DIR"
 
-echo "6) Writing beta helper files"
+echo "7) Writing beta helper files"
 cp -f "$ROOT/Open Custom Stem Injector.command" "$BETA_HELPER"
 chmod +x "$BETA_HELPER"
 cp -f "$SOURCE_BETA_README" "$BETA_README"
 cp -f "$SOURCE_LICENSE" "$BETA_LICENSE"
 strip_appledouble "$BETA_DIR"
 
-echo "7) Applying fresh ad hoc signature"
+echo "8) Applying fresh ad hoc signature"
 codesign --force --deep --sign - "$BETA_APP" >/dev/null 2>&1
 
-echo "8) Building zip artifact"
+echo "9) Building zip artifact"
 rm -f "$BETA_ZIP"
+rm -f "$RELEASE_ZIP"
 ditto -c -k --keepParent --norsrc "$BETA_DIR" "$BETA_ZIP"
+cp -f "$BETA_ZIP" "$RELEASE_ZIP"
 
-echo "9) Validation"
+echo "10) Validation"
 spctl -a -vv "$BETA_APP" || true
 codesign -dvvv "$BETA_APP" 2>&1 | sed -n '1,20p' || true
+"$BETA_RUNTIME/bin/ffmpeg" -hide_banner -version | sed -n '1,3p'
 "$EMBEDDED_PYTHON_BIN" -c "import sys; print(sys.executable); print(sys.prefix)" || true
 "$EMBEDDED_PYTHON_BIN" -c "import sys; sys.path.insert(0, r'$BETA_RUNTIME/tools/_pydeps'); import mutagen, numpy; print('Embedded Python import check: ok')" || true
 
@@ -156,3 +272,4 @@ echo "Created:"
 echo "  Folder: $BETA_DIR"
 echo "  App:    $BETA_APP"
 echo "  Zip:    $BETA_ZIP"
+echo "  Asset:  $RELEASE_ZIP"

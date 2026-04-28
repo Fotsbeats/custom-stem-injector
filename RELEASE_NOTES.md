@@ -1,17 +1,18 @@
 # Custom Stem Injector Beta
 
-Version: `0.1.0-beta.4`
+Version: `0.1.0-beta.5`
 
 ## Release Summary
 
 Custom Stem Injector Beta is an Apple Silicon macOS test build for approved testers.
 
-## What's new in Beta 4
+## What's new in Beta 5
 
-- updated the app UI with the latest visual refresh
-- removed Debug Mode from the tester console so status/output stays simple
-- refreshed packaged app icon wiring so the built bundle explicitly ships the new app icon
-- keeps the Beta 3 fix for packaged extraction/runtime writes under App Translocation
+- bundles ffmpeg/ffprobe runtime libraries so tester Macs do not need Homebrew
+- repairs stale packaged model links created by App Translocation between launches
+- improves extraction decoding for common AAC/M4A inputs
+- fixes Align Stems rendering failures caused by the aligned MP3 ffmpeg filter chain
+- improves backend error reporting so the app shows the real bridge error instead of progress lines
 
 ## Included asset
 
